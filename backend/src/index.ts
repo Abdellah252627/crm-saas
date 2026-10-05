@@ -1,7 +1,7 @@
 import cookieParser from "cookie-parser";
 import cors from "cors";
 import express from "express";
-import helmet from "helmet";
+import * as helmetModule from "helmet";
 import type { NextFunction, Request, Response } from "express";
 import { env } from "./config/env.js";
 import { errorHandler, notFoundHandler } from "./middlewares/error.middleware.js";
@@ -12,6 +12,12 @@ import clientRoutes from "./routes/client.routes.js";
 import dashboardRoutes from "./routes/dashboard.routes.js";
 import pipelineRoutes from "./routes/pipeline.routes.js";
 import { pruneExpiredSessions } from "./services/auth.service.js";
+
+// helmet 8 exports its middleware only as the ESM/CJS `default` export.
+// Reading `.default` off the namespace keeps the call valid under every
+// TypeScript resolution mode, where a plain default import can bind to
+// the non-callable module namespace instead of the middleware function.
+const helmet = helmetModule.default;
 
 const app = express();
 
