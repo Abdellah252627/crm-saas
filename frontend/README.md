@@ -1,102 +1,103 @@
 # CRM SaaS — Frontend
 
-Frontend for the CRM SaaS app, built with React 19 + TypeScript + Vite, Tailwind CSS,
-React Router, TanStack React Query, and Axios. It talks to the Express 5 + Prisma
-backend at `http://localhost:4000`.
+React frontend for the CRM SaaS application. Built with React 19, TypeScript, Vite, and Tailwind CSS.
 
-## Getting started
+For full project documentation, see the [root README](../README.md).
+
+## Getting Started
 
 ```bash
 npm install
-npm run dev        # http://localhost:5173
-npm run build      # typecheck + production build
-npm run preview    # preview the production build
+npm run dev        # Start dev server at http://localhost:5173
+npm run build      # TypeScript check + production build
+npm run preview    # Preview production build
 ```
+
+## Tech Stack
+
+- **React 19** with TypeScript 6
+- **Vite 8** for build tooling
+- **Tailwind CSS 3** for styling
+- **React Router 7** for client-side routing
+- **TanStack React Query 5** for server state management
+- **React Hook Form + Zod** for form validation
+- **Axios** for HTTP requests with interceptors
+- **Recharts** for data visualization
+- **@dnd-kit/core** for drag-and-drop interactions
+- **Sonner** for toast notifications
 
 ## Environment
 
-Create `.env` (see `.env.example`):
+Create a `.env` file in the `frontend/` directory:
 
 ```
 VITE_API_URL=http://localhost:4000
 ```
 
-## Structure
+## Project Structure
 
 ```
 src/
-├── api/          axios instance (baseURL, 10s timeout, Bearer interceptor,
-│                 401 auto-refresh, 5xx logging)
-│                 + auth API + clients API (toast.promise integration)
-├── lib/          toast.ts (sonner wrapper: success/error/loading/promise)
-├── components/   Layout, ProtectedRoute, ClientModal, ErrorBoundary,
-│                 Toaster, PagePlaceholder, ui/ (Button, Input)
-├── pages/        Dashboard, Login, Register, Clients, Pipeline
-├── hooks/        useAuth, useClients (optimistic updates), useDebouncedValue
-└── types/        shared TypeScript interfaces (auth, client)
+├── api/              # Axios instance, interceptors, and API modules
+├── components/       # Reusable UI components
+│   ├── ui/           # Design system primitives (Button, Input)
+│   └── *.tsx         # Feature components (ClientModal, Layout, Charts, etc.)
+├── hooks/            # Custom React Query hooks
+├── lib/              # Shared utilities (toast, formatting, UI tokens)
+├── pages/            # Route-level page components
+├── types/            # TypeScript type definitions
+├── App.tsx           # Route configuration
+└── main.tsx          # Application entry point
 ```
 
-## Toast notifications
+## Key Architecture Decisions
 
-`lib/toast.ts` wraps Sonner. Mutation API functions (create/update/delete
-client, login/register/logout) use `toast.promise` with Arabic
-loading/success/error messages, including the backend error detail when
-available. List queries intentionally show no toasts — they refetch on
-invalidation and a loading toast on every refetch would be noisy.
+### State Management
+- **React Query** handles all server state (clients, contacts, dashboard stats, pipeline data)
+- **React Hook Form** manages local form state with Zod validation
+- **React Context** (`AuthContext`) provides global auth state
 
-`<Toaster />` is mounted in `main.tsx` (top-center, rich colors, RTL).
+### Optimistic Updates
+Client mutations use optimistic updates via React Query:
+- `onMutate`: snapshot current cache, cancel in-flight requests, apply optimistic change
+- `onError`: restore snapshot on failure
+- `onSettled`: invalidate queries to ensure server data wins
 
-## Optimistic updates
+### Error Handling
+- **Error Boundary** catches render errors in protected routes
+- **Axios interceptors** handle 401/refresh flow and network error logging
+- **API error normalization** via `getApiErrorMessage()` for consistent Arabic error messages
 
-`useClients` mutations apply changes to the React Query cache before the
-server responds (`onMutate` snapshots all `["clients", ...]` queries,
-cancels in-flight refetches, and applies the change), roll back on
-`onError`, and invalidate on `onSettled` so server data wins.
+### RTL & Localization
+- Arabic-first interface with `dir="rtl"` on all page containers
+- `Intl.DateTimeFormat("ar-EG")` for date formatting
+- All user-facing strings in Arabic
 
-## Error boundary
+## Linting
 
-`ErrorBoundary` catches render errors in the protected routes, logs them,
-and shows a retry button instead of a blank screen.
+```bash
+npm run lint
+```
 
-## Protected routes
+Uses Oxlint with React and TypeScript plugins.
 
-`/`, `/clients` and `/pipeline` are wrapped in `ProtectedRoute`, which
-saves the requested URL and redirects to `/login` when no access token
-exists in `localStorage`; after login the app navigates back to the
-original URL.
+## Testing
 
-## Clients
+Backend tests are located in the `backend/tests/` directory. Run them from the backend directory:
 
-- `useClients(params)` fetches `GET /api/clients` with optional `stage`,
-  `search`, `page` and `limit` (React Query, key `["clients", params]`).
-- `useCreateClient` / `useUpdateClient` / `useDeleteClient` invalidate the
-  `["clients"]` queries on success, so the table refreshes automatically
-  after every mutation.
-- The Clients page debounces the search input (300ms), filters by stage,
-  and paginates using the backend's `totalPages` metadata.
-- `ClientModal` handles both create and edit (pass `client?`) with
-  React Hook Form + Zod validation.
+```bash
+cd backend
+npm test
+```
 
-## Pipeline (Kanban)
+## Docker
 
-- `useStageClients(stage)` fetches each stage's clients through the
-  shared `["clients", ...]` query prefix, so the Kanban and the
-  Clients page stay in sync automatically.
-- `useMoveToStage()` applies an optimistic move across the stage
-  caches and the stats query, rolls back on failure, and
-  invalidates on settle.
-- Drag & drop uses `@dnd-kit/core`: cards are draggable, columns
-  are droppable, and `DndContext.onDragEnd` triggers the move.
-- Note: the backend `Stage` enum is `LEAD, CONTACTED, PROPOSAL,
-  WON, LOST` — the Kanban renders exactly these five stages.
-- `getStageStats()` reads `GET /api/dashboard` (`byStage` counts).
+```bash
+docker compose up --build
+```
 
-## Routes
+See the [root README](../README.md#docker) for details.
 
-| Path         | Page                       |
-| ------------ | -------------------------- |
-| `/`          | Dashboard (protected) |
-| `/login`     | Sign in                    |
-| `/register`  | Create account             |
-| `/clients`   | Clients (protected)        |
-| `/pipeline`  | Pipeline (protected)       |
+## License
+
+Proprietary. All rights reserved.
