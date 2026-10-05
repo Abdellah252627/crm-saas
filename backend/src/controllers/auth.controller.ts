@@ -17,7 +17,7 @@ function refreshCookieOptions(): CookieOptions {
   return {
     httpOnly: true,
     secure: env.isProduction,
-    sameSite: "strict",
+    sameSite: env.isProduction ? "none" : "strict",
     path: REFRESH_COOKIE_PATH,
     maxAge: REFRESH_TOKEN_MAX_AGE_MS,
   };

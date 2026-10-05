@@ -1,0 +1,6 @@
+{
+  "$schema": "https://openapi.vercel.sh/vercel.json",
+  "buildCommand": "npm run prisma:generate",
+  "rewrites": [{ "source": "/(.*)", "destination": "/api/index.ts" }],
+  "crons": [{ "path": "/api/internal/prune", "schedule": "0 3 * * *" }]
+}

@@ -2,6 +2,7 @@ import cookieParser from "cookie-parser";
 import cors from "cors";
 import express from "express";
 import helmet from "helmet";
+import type { NextFunction, Request, Response } from "express";
 import { env } from "./config/env.js";
 import { errorHandler, notFoundHandler } from "./middlewares/error.middleware.js";
 import { apiRateLimiter } from "./middlewares/rate-limit.middleware.js";
@@ -31,21 +32,33 @@ app.use("/api/clients", apiRateLimiter, clientRoutes);
 app.use("/api/pipeline", apiRateLimiter, pipelineRoutes);
 app.use("/api/dashboard", apiRateLimiter, dashboardRoutes);
 
+// Called by the Vercel Cron job defined in vercel.json; on classic hosts the
+// setInterval below handles pruning instead.
+app.all("/api/internal/prune", requireCronSecret, async (_req: Request, res: Response, next: NextFunction) => {
+  try {
+    const pruned = await pruneExpiredSessions();
+    res.json({ pruned });
+  } catch (error) {
+    next(error);
+  }
+});
+
+function requireCronSecret(req: Request, res: Response, next: NextFunction): void {
+  const authorization = req.headers.authorization;
+  if (env.cronSecret === "" || authorization !== `Bearer ${env.cronSecret}`) {
+    res.status(401).json({
+      error: { code: "UNAUTHORIZED", message: "Invalid cron secret" },
+    });
+    return;
+  }
+  next();
+}
+
 app.use(notFoundHandler);
 app.use(errorHandler);
 
-const server = app.listen(env.port, () => {
-  console.log(`crm-saas-backend listening on http://localhost:${env.port}`);
-});
-
-const SESSION_PRUNE_INTERVAL_MS = 60 * 60 * 1000;
-const pruneTimer = setInterval(() => {
-  void pruneExpiredSessions().catch((error: unknown) => {
-    console.error("[session-prune] failed", error);
-  });
-}, SESSION_PRUNE_INTERVAL_MS);
-pruneTimer.unref();
-
+let server: ReturnType<typeof app.listen> | undefined;
+let pruneTimer: ReturnType<typeof setInterval> | undefined;
 let shuttingDown = false;
 
 async function shutdown(signal: string): Promise<void> {
@@ -53,7 +66,9 @@ async function shutdown(signal: string): Promise<void> {
   shuttingDown = true;
   console.log(`[shutdown] ${signal} received, closing server`);
 
-  clearInterval(pruneTimer);
+  if (pruneTimer !== undefined) {
+    clearInterval(pruneTimer);
+  }
 
   // Backstop only: it does not hold the event loop open, but still fires if a
   // lingering keep-alive connection prevents the server from closing in time.
@@ -65,6 +80,10 @@ async function shutdown(signal: string): Promise<void> {
 
   try {
     await new Promise<void>((resolve) => {
+      if (server === undefined) {
+        resolve();
+        return;
+      }
       server.close((error) => {
         if (error) console.error("[shutdown] server.close failed", error);
         resolve();
@@ -84,10 +103,27 @@ async function shutdown(signal: string): Promise<void> {
   }
 }
 
-for (const signal of ["SIGINT", "SIGTERM"] as const) {
-  process.on(signal, () => {
-    void shutdown(signal);
+// Serverless runtimes (Vercel) import the app without starting a listener:
+// api/index.ts exports the handler instead, and vercel.json schedules the
+// session pruning cron.
+if (!env.isServerless) {
+  server = app.listen(env.port, () => {
+    console.log(`crm-saas-backend listening on http://localhost:${env.port}`);
   });
+
+  const SESSION_PRUNE_INTERVAL_MS = 60 * 60 * 1000;
+  pruneTimer = setInterval(() => {
+    void pruneExpiredSessions().catch((error: unknown) => {
+      console.error("[session-prune] failed", error);
+    });
+  }, SESSION_PRUNE_INTERVAL_MS);
+  pruneTimer.unref();
+
+  for (const signal of ["SIGINT", "SIGTERM"] as const) {
+    process.on(signal, () => {
+      void shutdown(signal);
+    });
+  }
 }
 
 export default app;

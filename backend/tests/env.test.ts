@@ -86,4 +86,37 @@ describe("loadEnv", () => {
     assert.equal(loadEnv(VALID).rateLimitEnabled, true);
     assert.equal(loadEnv(envWith({ RATE_LIMIT_ENABLED: "false" })).rateLimitEnabled, false);
   });
+
+  it("requires CRON_SECRET but not PORT in serverless mode", () => {
+    const problems = problemsFor({ ...VALID, PORT: undefined, VERCEL: "1" });
+    assert.ok(problems.some((p) => p.includes("CRON_SECRET")));
+    assert.ok(!problems.some((p) => p.includes("PORT")));
+  });
+
+  it("accepts a serverless configuration with a cron secret", () => {
+    const serverless = loadEnv(
+      envWith({ PORT: undefined, VERCEL: "1", CRON_SECRET: "cron-secret-12345" }),
+    );
+    assert.equal(serverless.isServerless, true);
+    assert.equal(serverless.port, 4000);
+    assert.equal(serverless.cronSecret, "cron-secret-12345");
+  });
+
+  it("rejects a half-configured Upstash Redis pair", () => {
+    const problems = problemsFor(
+      envWith({ UPSTASH_REDIS_REST_URL: "https://redis.upstash.io" }),
+    );
+    assert.ok(problems.some((p) => p.includes("UPSTASH")));
+  });
+
+  it("accepts a complete Upstash Redis pair", () => {
+    const withRedis = loadEnv(
+      envWith({
+        UPSTASH_REDIS_REST_URL: "https://redis.upstash.io",
+        UPSTASH_REDIS_REST_TOKEN: "token",
+      }),
+    );
+    assert.equal(withRedis.upstashRedisUrl, "https://redis.upstash.io");
+    assert.equal(withRedis.upstashRedisToken, "token");
+  });
 });

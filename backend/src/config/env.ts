@@ -5,6 +5,7 @@ export type NodeEnv = "development" | "production" | "test";
 export interface AppEnv {
   nodeEnv: NodeEnv;
   isProduction: boolean;
+  isServerless: boolean;
   port: number;
   databaseUrl: string;
   directUrl?: string;
@@ -12,6 +13,9 @@ export interface AppEnv {
   accessTokenTtl: string;
   refreshTokenTtlMs: number;
   corsOrigins: string[];
+  cronSecret: string;
+  upstashRedisUrl?: string;
+  upstashRedisToken?: string;
   rateLimitEnabled: boolean;
   loginRateLimit: number;
   registerRateLimit: number;
@@ -115,10 +119,15 @@ function loadEnv(source: NodeJS.ProcessEnv = process.env): AppEnv {
     problems.push(`NODE_ENV must be development, production or test, got "${rawNodeEnv}"`);
   }
 
+  const isServerless = source.VERCEL === "1";
+
   const rawPort = (source.PORT ?? "").trim();
   let port = DEFAULT_PORT;
   if (rawPort === "") {
-    problems.push("PORT is required but was not set");
+    // Serverless runtimes (Vercel) assign ports internally and do not expose one.
+    if (!isServerless) {
+      problems.push("PORT is required but was not set");
+    }
   } else {
     const parsed = Number(rawPort);
     if (!Number.isInteger(parsed) || parsed < 1 || parsed > 65_535) {
@@ -142,15 +151,37 @@ function loadEnv(source: NodeJS.ProcessEnv = process.env): AppEnv {
     }
   }
 
+  const cronSecret = source.CRON_SECRET?.trim() ?? "";
+  if (isServerless && cronSecret.length < 16) {
+    problems.push(
+      "CRON_SECRET is required for serverless deployments (at least 16 characters)",
+    );
+  }
+
   const accessTokenTtl = normalizeAccessTtl(source.JWT_EXPIRES_IN, problems);
   const refreshTokenTtlMs =
     parseTtlToMs(source.REFRESH_EXPIRES_IN, DEFAULT_REFRESH_TTL_DAYS * TTL_UNIT_MS.d!) ??
     DEFAULT_REFRESH_TTL_DAYS * TTL_UNIT_MS.d!;
 
-  const corsOrigins = (source.CORS_ORIGIN ?? DEFAULT_CORS_ORIGIN)
+  const rawCorsOrigin = source.CORS_ORIGIN ?? "";
+  const corsOrigins = (rawCorsOrigin === "" ? DEFAULT_CORS_ORIGIN : rawCorsOrigin)
     .split(",")
     .map((origin) => origin.trim())
     .filter(Boolean);
+
+  if (nodeEnv === "production" && rawCorsOrigin.trim() === "") {
+    problems.push(
+      "CORS_ORIGIN is required in production (set it to your Vercel frontend URL)",
+    );
+  }
+
+  const upstashRedisUrl = source.UPSTASH_REDIS_REST_URL?.trim() || undefined;
+  const upstashRedisToken = source.UPSTASH_REDIS_REST_TOKEN?.trim() || undefined;
+  if ((upstashRedisUrl === undefined) !== (upstashRedisToken === undefined)) {
+    problems.push(
+      "UPSTASH_REDIS_REST_URL and UPSTASH_REDIS_REST_TOKEN must be set together",
+    );
+  }
 
   const rateLimitEnabled = parseBoolean(source.RATE_LIMIT_ENABLED, true);
   const loginRateLimit = parsePositiveInt(
@@ -179,6 +210,7 @@ function loadEnv(source: NodeJS.ProcessEnv = process.env): AppEnv {
   return Object.freeze({
     nodeEnv,
     isProduction: nodeEnv === "production",
+    isServerless,
     port,
     databaseUrl,
     directUrl: source.DIRECT_URL?.trim() || undefined,
@@ -186,6 +218,9 @@ function loadEnv(source: NodeJS.ProcessEnv = process.env): AppEnv {
     accessTokenTtl,
     refreshTokenTtlMs,
     corsOrigins,
+    cronSecret,
+    upstashRedisUrl,
+    upstashRedisToken,
     rateLimitEnabled,
     loginRateLimit,
     registerRateLimit,

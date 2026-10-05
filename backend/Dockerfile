@@ -8,8 +8,8 @@ COPY package.json package-lock.json ./
 RUN npm ci
 
 # Generate Prisma Client for the current platform
-COPY prisma/ ./prisma/
-RUN npx prisma generate
+COPY src/prisma/ ./src/prisma/
+RUN npx prisma generate --schema=src/prisma/schema.prisma
 
 # Copy source and build TypeScript
 COPY src/ ./src/
@@ -23,7 +23,7 @@ WORKDIR /app
 # Copy production dependencies, built code, and Prisma artifacts
 COPY --from=builder /app/node_modules ./node_modules
 COPY --from=builder /app/dist ./dist
-COPY --from=builder /app/prisma ./prisma
+COPY --from=builder /app/src/prisma ./src/prisma
 COPY package.json ./
 
 EXPOSE 4000
