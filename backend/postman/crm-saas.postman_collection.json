@@ -1,0 +1,4160 @@
+{
+  "info": {
+    "name": "crm-saas API",
+    "_postman_id": "crm-saas-local-collection",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "item": [
+    {
+      "name": "00 Health",
+      "item": [
+        {
+          "name": "Health check",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/health",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "health"
+              ]
+            }
+          },
+          "event": {
+            "listen": "test",
+            "script": {
+              "type": "text/javascript",
+              "exec": [
+                "pm.test(\"status 200\", () => pm.response.to.have.status(200));",
+                "pm.test(\"status ok\", () => pm.expect(pm.response.json().status).to.eql(\"ok\"));"
+              ]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "01 Auth setup",
+      "item": [
+        {
+          "name": "Alice",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Alice\",\n  \"email\": \"{{aliceEmail}}\",\n  \"password\": \"{{alicePassword}}\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/auth/register",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "auth",
+                "register"
+              ]
+            }
+          },
+          "event": {
+            "listen": "test",
+            "script": {
+              "type": "text/javascript",
+              "exec": [
+                "pm.test(\"status 201 or already registered (409)\", () => pm.expect([201, 409]).to.include(pm.response.code));"
+              ]
+            }
+          }
+        },
+        {
+          "name": "Bob",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Bob\",\n  \"email\": \"{{bobEmail}}\",\n  \"password\": \"{{bobPassword}}\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/auth/register",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "auth",
+                "register"
+              ]
+            }
+          },
+          "event": {
+            "listen": "test",
+            "script": {
+              "type": "text/javascript",
+              "exec": [
+                "pm.test(\"status 201 or already registered (409)\", () => pm.expect([201, 409]).to.include(pm.response.code));"
+              ]
+            }
+          }
+        },
+        {
+          "name": "Login as Alice",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"{{aliceEmail}}\",\n  \"password\": \"{{alicePassword}}\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/auth/login",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "auth",
+                "login"
+              ]
+            }
+          },
+          "event": {
+            "listen": "test",
+            "script": {
+              "type": "text/javascript",
+              "exec": [
+                "pm.test(\"status 200\", () => pm.response.to.have.status(200));",
+                "if (pm.response.code === 200) pm.environment.set(\"accessToken\", pm.response.json().accessToken);"
+              ]
+            }
+          }
+        },
+        {
+          "name": "Login with wrong password (expect 401)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"{{aliceEmail}}\",\n  \"password\": \"WrongPassword123\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/auth/login",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "auth",
+                "login"
+              ]
+            }
+          },
+          "event": {
+            "listen": "test",
+            "script": {
+              "type": "text/javascript",
+              "exec": [
+                "pm.test(\"status 401\", () => pm.response.to.have.status(401));"
+              ]
+            }
+          }
+        },
+        {
+          "name": "Refresh via cookie (expect 200)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/auth/refresh",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "auth",
+                "refresh"
+              ]
+            }
+          },
+          "event": {
+            "listen": "test",
+            "script": {
+              "type": "text/javascript",
+              "exec": [
+                "pm.test(\"status 200\", () => pm.response.to.have.status(200));",
+                "if (pm.response.code === 200) pm.environment.set(\"refreshedAccessToken\", pm.response.json().accessToken);"
+              ]
+            }
+          }
+        },
+        {
+          "name": "Refresh without cookie (expect 401)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/auth/refresh",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "auth",
+                "refresh"
+              ]
+            }
+          },
+          "event": {
+            "listen": "prerequest",
+            "script": {
+              "type": "text/javascript",
+              "exec": [
+                "pm.cookies.clear();"
+              ]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "02 Clients as Alice",
+      "item": [
+        {
+          "name": "Login as Alice",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"{{aliceEmail}}\",\n  \"password\": \"{{alicePassword}}\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/auth/login",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "auth",
+                "login"
+              ]
+            }
+          },
+          "event": {
+            "listen": "test",
+            "script": {
+              "type": "text/javascript",
+              "exec": [
+                "pm.test(\"status 200\", () => pm.response.to.have.status(200));",
+                "if (pm.response.code === 200) pm.environment.set(\"accessToken\", pm.response.json().accessToken);"
+              ]
+            }
+          }
+        },
+        {
+          "name": "Create client (default stage LEAD)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Acme Industries\",\n  \"company\": \"Acme Corp\",\n  \"city\": \"Riyadh\",\n  \"email\": \"hi@acme.test\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/clients",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "clients"
+              ]
+            }
+          },
+          "event": {
+            "listen": "test",
+            "script": {
+              "type": "text/javascript",
+              "exec": [
+                "pm.test(\"status 201\", () => pm.response.to.have.status(201));",
+                "const b = pm.response.json();",
+                "if (b.client) pm.environment.set(\"clientId\", b.client.id);",
+                "pm.test(\"stage defaults to LEAD\", () => pm.expect(b.client.stage).to.eql(\"LEAD\"));",
+                "pm.test(\"no password leaked\", () => pm.expect(JSON.stringify(b)).to.not.include(\"password\"));"
+              ]
+            }
+          }
+        },
+        {
+          "name": "Create client with stage WON",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Globex Trading\",\n  \"company\": \"Globex Ltd\",\n  \"stage\": \"WON\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/clients",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "clients"
+              ]
+            }
+          },
+          "event": {
+            "listen": "test",
+            "script": {
+              "type": "text/javascript",
+              "exec": [
+                "pm.test(\"status 201\", () => pm.response.to.have.status(201));",
+                "pm.test(\"stage honoured\", () => pm.expect(pm.response.json().client.stage).to.eql(\"WON\"));"
+              ]
+            }
+          }
+        },
+        {
+          "name": "List all",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/clients",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "clients"
+              ]
+            }
+          },
+          "event": {
+            "listen": "test",
+            "script": {
+              "type": "text/javascript",
+              "exec": [
+                "pm.test(\"status 200\", () => pm.response.to.have.status(200));",
+                "pm.test(\"has at least 2 clients\", () => pm.expect(pm.response.json().count).to.be.at.least(2));"
+              ]
+            }
+          }
+        },
+        {
+          "name": "Filter by stage WON",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/clients?stage=WON",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "clients"
+              ],
+              "query": [
+                {
+                  "key": "stage",
+                  "value": "WON"
+                }
+              ]
+            }
+          },
+          "event": {
+            "listen": "test",
+            "script": {
+              "type": "text/javascript",
+              "exec": [
+                "pm.test(\"status 200\", () => pm.response.to.have.status(200));",
+                "const c = pm.response.json();",
+                "pm.test(\"count is at least 1\", () => pm.expect(c.count).to.be.at.least(1));",
+                "pm.test(\"only WON returned\", () => c.clients.forEach((x) => pm.expect(x.stage).to.eql(\"WON\")));",
+                "pm.test(\"LEAD excluded\", () => pm.expect(JSON.stringify(c)).to.not.include(\"Acme\"));"
+              ]
+            }
+          }
+        },
+        {
+          "name": "Filter by stage LEAD",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/clients?stage=LEAD",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "clients"
+              ],
+              "query": [
+                {
+                  "key": "stage",
+                  "value": "LEAD"
+                }
+              ]
+            }
+          },
+          "event": {
+            "listen": "test",
+            "script": {
+              "type": "text/javascript",
+              "exec": [
+                "pm.test(\"status 200\", () => pm.response.to.have.status(200));",
+                "const c = pm.response.json();",
+                "pm.test(\"only LEAD returned\", () => c.clients.forEach((x) => pm.expect(x.stage).to.eql(\"LEAD\")));"
+              ]
+            }
+          }
+        },
+        {
+          "name": "Search by name",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/clients?search=acme",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "clients"
+              ],
+              "query": [
+                {
+                  "key": "search",
+                  "value": "acme"
+                }
+              ]
+            }
+          },
+          "event": {
+            "listen": "test",
+            "script": {
+              "type": "text/javascript",
+              "exec": [
+                "pm.test(\"status 200\", () => pm.response.to.have.status(200));",
+                "pm.test(\"matches by name\", () => pm.expect(pm.response.json().count).to.be.at.least(1));"
+              ]
+            }
+          }
+        },
+        {
+          "name": "Search by company (case-insensitive)",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/clients?search=GLOBEX",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "clients"
+              ],
+              "query": [
+                {
+                  "key": "search",
+                  "value": "GLOBEX"
+                }
+              ]
+            }
+          },
+          "event": {
+            "listen": "test",
+            "script": {
+              "type": "text/javascript",
+              "exec": [
+                "pm.test(\"status 200\", () => pm.response.to.have.status(200));",
+                "pm.test(\"matches by company\", () => pm.expect(pm.response.json().count).to.be.at.least(1));"
+              ]
+            }
+          }
+        },
+        {
+          "name": "Search no match",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/clients?search=zzzznomatch",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "clients"
+              ],
+              "query": [
+                {
+                  "key": "search",
+                  "value": "zzzznomatch"
+                }
+              ]
+            }
+          },
+          "event": {
+            "listen": "test",
+            "script": {
+              "type": "text/javascript",
+              "exec": [
+                "pm.test(\"status 200\", () => pm.response.to.have.status(200));",
+                "pm.test(\"empty result\", () => pm.expect(pm.response.json().count).to.eql(0));"
+              ]
+            }
+          }
+        },
+        {
+          "name": "Invalid stage query (expect 400)",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/clients?stage=BOGUS",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "clients"
+              ],
+              "query": [
+                {
+                  "key": "stage",
+                  "value": "BOGUS"
+                }
+              ]
+            }
+          },
+          "event": {
+            "listen": "test",
+            "script": {
+              "type": "text/javascript",
+              "exec": [
+                "pm.test(\"status 400\", () => pm.response.to.have.status(400));",
+                "pm.test(\"VALIDATION_ERROR\", () => pm.expect(pm.response.json().error.code).to.eql(\"VALIDATION_ERROR\"));"
+              ]
+            }
+          }
+        },
+        {
+          "name": "Get one with contact history",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/clients/{{clientId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "clients",
+                "{{clientId}}"
+              ]
+            }
+          },
+          "event": {
+            "listen": "test",
+            "script": {
+              "type": "text/javascript",
+              "exec": [
+                "pm.test(\"status 200\", () => pm.response.to.have.status(200));",
+                "pm.test(\"has contacts array\", () => pm.expect(pm.response.json().client.contacts).to.be.an(\"array\"));"
+              ]
+            }
+          }
+        },
+        {
+          "name": "Bad uuid (expect 400)",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/clients/not-a-uuid",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "clients",
+                "not-a-uuid"
+              ]
+            }
+          },
+          "event": {
+            "listen": "test",
+            "script": {
+              "type": "text/javascript",
+              "exec": [
+                "pm.test(\"status 400\", () => pm.response.to.have.status(400));"
+              ]
+            }
+          }
+        },
+        {
+          "name": "Unknown uuid (expect 404)",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/clients/00000000-0000-0000-0000-000000000000",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "clients",
+                "00000000-0000-0000-0000-000000000000"
+              ]
+            }
+          },
+          "event": {
+            "listen": "test",
+            "script": {
+              "type": "text/javascript",
+              "exec": [
+                "pm.test(\"status 404\", () => pm.response.to.have.status(404));"
+              ]
+            }
+          }
+        },
+        {
+          "name": "Patch stage and phone",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"stage\": \"PROPOSAL\",\n  \"phone\": \"5551234\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/clients/{{clientId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "clients",
+                "{{clientId}}"
+              ]
+            }
+          },
+          "event": {
+            "listen": "test",
+            "script": {
+              "type": "text/javascript",
+              "exec": [
+                "pm.test(\"status 200\", () => pm.response.to.have.status(200));",
+                "pm.test(\"stage updated\", () => pm.expect(pm.response.json().client.stage).to.eql(\"PROPOSAL\"));"
+              ]
+            }
+          }
+        },
+        {
+          "name": "Patch single field",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"city\": \"Jeddah\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/clients/{{clientId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "clients",
+                "{{clientId}}"
+              ]
+            }
+          },
+          "event": {
+            "listen": "test",
+            "script": {
+              "type": "text/javascript",
+              "exec": [
+                "pm.test(\"status 200\", () => pm.response.to.have.status(200));"
+              ]
+            }
+          }
+        },
+        {
+          "name": "Clear field with null",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"city\": null\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/clients/{{clientId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "clients",
+                "{{clientId}}"
+              ]
+            }
+          },
+          "event": {
+            "listen": "test",
+            "script": {
+              "type": "text/javascript",
+              "exec": [
+                "pm.test(\"status 200\", () => pm.response.to.have.status(200));",
+                "pm.test(\"city is null\", () => pm.expect(pm.response.json().client.city).to.eql(null));"
+              ]
+            }
+          }
+        },
+        {
+          "name": "Empty patch (expect 400)",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/clients/{{clientId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "clients",
+                "{{clientId}}"
+              ]
+            }
+          },
+          "event": {
+            "listen": "test",
+            "script": {
+              "type": "text/javascript",
+              "exec": [
+                "pm.test(\"status 400\", () => pm.response.to.have.status(400));"
+              ]
+            }
+          }
+        },
+        {
+          "name": "Invalid stage patch (expect 400)",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"stage\": \"NOPE\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/clients/{{clientId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "clients",
+                "{{clientId}}"
+              ]
+            }
+          },
+          "event": {
+            "listen": "test",
+            "script": {
+              "type": "text/javascript",
+              "exec": [
+                "pm.test(\"status 400\", () => pm.response.to.have.status(400));"
+              ]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "03 Contacts as Alice",
+      "item": [
+        {
+          "name": "Login as Alice",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"{{aliceEmail}}\",\n  \"password\": \"{{alicePassword}}\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/auth/login",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "auth",
+                "login"
+              ]
+            }
+          },
+          "event": {
+            "listen": "test",
+            "script": {
+              "type": "text/javascript",
+              "exec": [
+                "pm.test(\"status 200\", () => pm.response.to.have.status(200));",
+                "if (pm.response.code === 200) pm.environment.set(\"accessToken\", pm.response.json().accessToken);"
+              ]
+            }
+          }
+        },
+        {
+          "name": "Create CALL contact",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/clients/{{clientId}}/contacts",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "clients",
+                "{{clientId}}",
+                "contacts"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"type\": \"CALL\",\n  \"note\": \"Intro call about CRM\",\n  \"date\": \"2026-09-01T10:00:00Z\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": {
+            "listen": "test",
+            "script": {
+              "type": "text/javascript",
+              "exec": [
+                "pm.test(\"status 201\", () => pm.response.to.have.status(201));",
+                "const b = pm.response.json();",
+                "if (b.contact) pm.environment.set(\"contactId\", b.contact.id);",
+                "pm.test(\"type echoed\", () => pm.expect(b.contact.type).to.eql(\"CALL\"));",
+                "pm.test(\"date returned as string\", () => pm.expect(b.contact.date).to.be.a(\"string\"));"
+              ]
+            }
+          }
+        },
+        {
+          "name": "Create EMAIL contact (no note)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/clients/{{clientId}}/contacts",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "clients",
+                "{{clientId}}",
+                "contacts"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"type\": \"EMAIL\",\n  \"date\": \"2026-09-15T14:30:00Z\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": {
+            "listen": "test",
+            "script": {
+              "type": "text/javascript",
+              "exec": [
+                "pm.test(\"status 201\", () => pm.response.to.have.status(201));",
+                "pm.test(\"note defaults to null\", () => pm.expect(pm.response.json().contact.note).to.eql(null));"
+              ]
+            }
+          }
+        },
+        {
+          "name": "Create MEETING contact (newest)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/clients/{{clientId}}/contacts",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "clients",
+                "{{clientId}}",
+                "contacts"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"type\": \"MEETING\",\n  \"note\": \"Demo\",\n  \"date\": \"2026-10-01T09:00:00Z\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": {
+            "listen": "test",
+            "script": {
+              "type": "text/javascript",
+              "exec": [
+                "pm.test(\"status 201\", () => pm.response.to.have.status(201));"
+              ]
+            }
+          }
+        },
+        {
+          "name": "Create contact with +03:00 offset",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/clients/{{clientId}}/contacts",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "clients",
+                "{{clientId}}",
+                "contacts"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"type\": \"CALL\",\n  \"date\": \"2026-10-02T12:00:00+03:00\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": {
+            "listen": "test",
+            "script": {
+              "type": "text/javascript",
+              "exec": [
+                "pm.test(\"status 201\", () => pm.response.to.have.status(201));"
+              ]
+            }
+          }
+        },
+        {
+          "name": "Invalid type (expect 400)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/clients/{{clientId}}/contacts",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "clients",
+                "{{clientId}}",
+                "contacts"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"type\": \"SMS\",\n  \"date\": \"2026-10-01T09:00:00Z\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": {
+            "listen": "test",
+            "script": {
+              "type": "text/javascript",
+              "exec": [
+                "pm.test(\"status 400\", () => pm.response.to.have.status(400));"
+              ]
+            }
+          }
+        },
+        {
+          "name": "Invalid date (expect 400)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/clients/{{clientId}}/contacts",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "clients",
+                "{{clientId}}",
+                "contacts"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"type\": \"CALL\",\n  \"date\": \"not-a-date\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": {
+            "listen": "test",
+            "script": {
+              "type": "text/javascript",
+              "exec": [
+                "pm.test(\"status 400\", () => pm.response.to.have.status(400));"
+              ]
+            }
+          }
+        },
+        {
+          "name": "Missing date (expect 400)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/clients/{{clientId}}/contacts",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "clients",
+                "{{clientId}}",
+                "contacts"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"type\": \"CALL\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": {
+            "listen": "test",
+            "script": {
+              "type": "text/javascript",
+              "exec": [
+                "pm.test(\"status 400\", () => pm.response.to.have.status(400));"
+              ]
+            }
+          }
+        },
+        {
+          "name": "Unknown clientId (expect 404)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/clients/11111111-2222-4333-8444-555555555555/contacts",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "clients",
+                "11111111-2222-4333-8444-555555555555",
+                "contacts"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"type\": \"CALL\",\n  \"date\": \"2026-10-01T09:00:00Z\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": {
+            "listen": "test",
+            "script": {
+              "type": "text/javascript",
+              "exec": [
+                "pm.test(\"status 404\", () => pm.response.to.have.status(404));"
+              ]
+            }
+          }
+        },
+        {
+          "name": "List contacts (newest first)",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/clients/{{clientId}}/contacts",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "clients",
+                "{{clientId}}",
+                "contacts"
+              ]
+            }
+          },
+          "event": {
+            "listen": "test",
+            "script": {
+              "type": "text/javascript",
+              "exec": [
+                "pm.test(\"status 200\", () => pm.response.to.have.status(200));",
+                "const b = pm.response.json();",
+                "pm.test(\"count is 4\", () => pm.expect(b.count).to.eql(4));",
+                "pm.test('ordered newest to oldest', () => { const d = b.contacts.map(x => new Date(x.date).getTime()); for (let i = 1; i < d.length; i++) pm.expect(d[i]).to.be.at.most(d[i - 1]); });"
+              ]
+            }
+          }
+        },
+        {
+          "name": "Get client and confirm contacts[] populated",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/clients/{{clientId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "clients",
+                "{{clientId}}"
+              ]
+            }
+          },
+          "event": {
+            "listen": "test",
+            "script": {
+              "type": "text/javascript",
+              "exec": [
+                "pm.test(\"status 200\", () => pm.response.to.have.status(200));",
+                "const b = pm.response.json();",
+                "pm.test(\"client has contacts array\", () => pm.expect(b.client.contacts).to.be.an(\"array\"));",
+                "pm.test(\"contacts length is 4\", () => pm.expect(b.client.contacts.length).to.eql(4));",
+                "pm.test(\"contacts newest first\", () => pm.expect(b.client.contacts[0].type).to.eql(\"CALL\"));",
+                "pm.test(\"no password anywhere\", () => pm.expect(JSON.stringify(b)).to.not.include(\"password\"));"
+              ]
+            }
+          }
+        },
+        {
+          "name": "Delete contact",
+          "request": {
+            "method": "DELETE",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/clients/{{clientId}}/contacts/{{contactId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "clients",
+                "{{clientId}}",
+                "contacts",
+                "{{contactId}}"
+              ]
+            }
+          },
+          "event": {
+            "listen": "test",
+            "script": {
+              "type": "text/javascript",
+              "exec": [
+                "pm.test(\"status 204\", () => pm.response.to.have.status(204));"
+              ]
+            }
+          }
+        },
+        {
+          "name": "Delete same contact twice (expect 404)",
+          "request": {
+            "method": "DELETE",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/clients/{{clientId}}/contacts/{{contactId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "clients",
+                "{{clientId}}",
+                "contacts",
+                "{{contactId}}"
+              ]
+            }
+          },
+          "event": {
+            "listen": "test",
+            "script": {
+              "type": "text/javascript",
+              "exec": [
+                "pm.test(\"status 404\", () => pm.response.to.have.status(404));"
+              ]
+            }
+          }
+        },
+        {
+          "name": "List after delete (expect 3)",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/clients/{{clientId}}/contacts",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "clients",
+                "{{clientId}}",
+                "contacts"
+              ]
+            }
+          },
+          "event": {
+            "listen": "test",
+            "script": {
+              "type": "text/javascript",
+              "exec": [
+                "pm.test(\"status 200\", () => pm.response.to.have.status(200));",
+                "pm.test(\"count is 3\", () => pm.expect(pm.response.json().count).to.eql(3));"
+              ]
+            }
+          }
+        },
+        {
+          "name": "Delete unknown uuid (expect 404)",
+          "request": {
+            "method": "DELETE",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/clients/{{clientId}}/contacts/00000000-0000-0000-0000-000000000000",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "clients",
+                "{{clientId}}",
+                "contacts",
+                "00000000-0000-0000-0000-000000000000"
+              ]
+            }
+          },
+          "event": {
+            "listen": "test",
+            "script": {
+              "type": "text/javascript",
+              "exec": [
+                "pm.test(\"status 404\", () => pm.response.to.have.status(404));"
+              ]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "04 Pipeline as Alice",
+      "item": [
+        {
+          "name": "Login as Alice",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"{{aliceEmail}}\",\n  \"password\": \"{{alicePassword}}\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/auth/login",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "auth",
+                "login"
+              ]
+            }
+          },
+          "event": {
+            "listen": "test",
+            "script": {
+              "type": "text/javascript",
+              "exec": [
+                "pm.test(\"status 200\", () => pm.response.to.have.status(200));",
+                "if (pm.response.code === 200) pm.environment.set(\"accessToken\", pm.response.json().accessToken);"
+              ]
+            }
+          }
+        },
+        {
+          "name": "PL-1 Alpha (LEAD)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"PL-1 Alpha\",\n  \"company\": \"Alpha\",\n  \"stage\": \"LEAD\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/clients",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "clients"
+              ]
+            }
+          },
+          "event": {
+            "listen": "test",
+            "script": {
+              "type": "text/javascript",
+              "exec": [
+                "pm.test(\"status 201\", () => pm.response.to.have.status(201));",
+                "if (pm.response.json().client) pm.environment.set(\"pl1\", pm.response.json().client.id);"
+              ]
+            }
+          }
+        },
+        {
+          "name": "PL-2 Bravo (LEAD)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"PL-2 Bravo\",\n  \"company\": \"Bravo\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/clients",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "clients"
+              ]
+            }
+          },
+          "event": {
+            "listen": "test",
+            "script": {
+              "type": "text/javascript",
+              "exec": [
+                "pm.test(\"status 201\", () => pm.response.to.have.status(201));",
+                "if (pm.response.json().client) pm.environment.set(\"pl2\", pm.response.json().client.id);"
+              ]
+            }
+          }
+        },
+        {
+          "name": "PL-3 Charlie (PROPOSAL)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"PL-3 Charlie\",\n  \"company\": \"Charlie\",\n  \"stage\": \"PROPOSAL\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/clients",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "clients"
+              ]
+            }
+          },
+          "event": {
+            "listen": "test",
+            "script": {
+              "type": "text/javascript",
+              "exec": [
+                "pm.test(\"status 201\", () => pm.response.to.have.status(201));"
+              ]
+            }
+          }
+        },
+        {
+          "name": "PL-4 Delta (WON)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"PL-4 Delta\",\n  \"company\": \"Delta\",\n  \"stage\": \"WON\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/clients",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "clients"
+              ]
+            }
+          },
+          "event": {
+            "listen": "test",
+            "script": {
+              "type": "text/javascript",
+              "exec": [
+                "pm.test(\"status 201\", () => pm.response.to.have.status(201));"
+              ]
+            }
+          }
+        },
+        {
+          "name": "Pipeline: initial grouping",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/pipeline",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "pipeline"
+              ]
+            }
+          },
+          "event": {
+            "listen": "test",
+            "script": {
+              "type": "text/javascript",
+              "exec": [
+                "pm.test(\"status 200\", () => pm.response.to.have.status(200));",
+                "pm.test('has all five stage keys', () => pm.expect(Object.keys(pm.response.json().pipeline).sort()).to.eql(['CONTACTED','LEAD','LOST','PROPOSAL','WON']));",
+                "pm.test('every bucket is an array', () => Object.values(pm.response.json().pipeline).forEach((b) => pm.expect(b).to.be.an('array')));",
+                "pm.test('no password leaked', () => pm.expect(JSON.stringify(pm.response.json())).to.not.include('password'));",
+                "pm.test('every client appears in exactly one bucket', () => { const p = pm.response.json().pipeline; const all = Object.values(p).flat().map((x) => x.id); pm.expect(all.length).to.eql(new Set(all).size); });",
+                "pm.test(\"PL-1 Alpha is in LEAD\", () => { const p = pm.response.json().pipeline; pm.expect(p.LEAD.some((x) => x.name === \"PL-1 Alpha\")).to.eql(true);});",
+                "pm.test(\"PL-2 Bravo is in LEAD\", () => { const p = pm.response.json().pipeline; pm.expect(p.LEAD.some((x) => x.name === \"PL-2 Bravo\")).to.eql(true);});",
+                "pm.test(\"PL-3 Charlie is in PROPOSAL\", () => { const p = pm.response.json().pipeline; pm.expect(p.PROPOSAL.some((x) => x.name === \"PL-3 Charlie\")).to.eql(true);});",
+                "pm.test(\"PL-4 Delta is in WON\", () => { const p = pm.response.json().pipeline; pm.expect(p.WON.some((x) => x.name === \"PL-4 Delta\")).to.eql(true);});",
+                "pm.test('LOST starts empty', () => pm.expect(pm.response.json().pipeline.LOST).to.eql([]));",
+                "pm.test('total at least 4', () => pm.expect(pm.response.json().total).to.be.at.least(4));"
+              ]
+            }
+          }
+        },
+        {
+          "name": "Move PL-1 LEAD -> CONTACTED",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"stage\": \"CONTACTED\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/pipeline/{{pl1}}/stage",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "pipeline",
+                "{{pl1}}",
+                "stage"
+              ]
+            }
+          },
+          "event": {
+            "listen": "test",
+            "script": {
+              "type": "text/javascript",
+              "exec": [
+                "pm.test(\"status 200\", () => pm.response.to.have.status(200));",
+                "pm.test(\"stage is CONTACTED\", () => pm.expect(pm.response.json().client.stage).to.eql(\"CONTACTED\"));"
+              ]
+            }
+          }
+        },
+        {
+          "name": "Pipeline: after first move",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/pipeline",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "pipeline"
+              ]
+            }
+          },
+          "event": {
+            "listen": "test",
+            "script": {
+              "type": "text/javascript",
+              "exec": [
+                "pm.test(\"status 200\", () => pm.response.to.have.status(200));",
+                "pm.test('every client appears in exactly one bucket', () => { const p = pm.response.json().pipeline; const all = Object.values(p).flat().map((x) => x.id); pm.expect(all.length).to.eql(new Set(all).size); });",
+                "pm.test(\"PL-1 Alpha sits only in CONTACTED\", () => { const p = pm.response.json().pipeline; const inStages = Object.keys(p).filter((s) => p[s].some((x) => x.name === \"PL-1 Alpha\")); pm.expect(inStages).to.eql([\"CONTACTED\"]);});",
+                "pm.test(\"PL-2 Bravo sits only in LEAD\", () => { const p = pm.response.json().pipeline; const inStages = Object.keys(p).filter((s) => p[s].some((x) => x.name === \"PL-2 Bravo\")); pm.expect(inStages).to.eql([\"LEAD\"]);});"
+              ]
+            }
+          }
+        },
+        {
+          "name": "Move PL-1 CONTACTED -> PROPOSAL",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"stage\": \"PROPOSAL\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/pipeline/{{pl1}}/stage",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "pipeline",
+                "{{pl1}}",
+                "stage"
+              ]
+            }
+          },
+          "event": {
+            "listen": "test",
+            "script": {
+              "type": "text/javascript",
+              "exec": [
+                "pm.test(\"status 200\", () => pm.response.to.have.status(200));"
+              ]
+            }
+          }
+        },
+        {
+          "name": "Pipeline: PL-1 in PROPOSAL only",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/pipeline",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "pipeline"
+              ]
+            }
+          },
+          "event": {
+            "listen": "test",
+            "script": {
+              "type": "text/javascript",
+              "exec": [
+                "pm.test(\"status 200\", () => pm.response.to.have.status(200));",
+                "pm.test(\"PL-1 Alpha sits only in PROPOSAL\", () => { const p = pm.response.json().pipeline; const inStages = Object.keys(p).filter((s) => p[s].some((x) => x.name === \"PL-1 Alpha\")); pm.expect(inStages).to.eql([\"PROPOSAL\"]);});",
+                "pm.test(\"PL-3 Charlie sits only in PROPOSAL\", () => { const p = pm.response.json().pipeline; const inStages = Object.keys(p).filter((s) => p[s].some((x) => x.name === \"PL-3 Charlie\")); pm.expect(inStages).to.eql([\"PROPOSAL\"]);});",
+                "pm.test(\"PL-2 Bravo sits only in LEAD\", () => { const p = pm.response.json().pipeline; const inStages = Object.keys(p).filter((s) => p[s].some((x) => x.name === \"PL-2 Bravo\")); pm.expect(inStages).to.eql([\"LEAD\"]);});",
+                "pm.test('CONTACTED is now empty', () => pm.expect(pm.response.json().pipeline.CONTACTED).to.eql([]));"
+              ]
+            }
+          }
+        },
+        {
+          "name": "Move PL-1 PROPOSAL -> WON",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"stage\": \"WON\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/pipeline/{{pl1}}/stage",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "pipeline",
+                "{{pl1}}",
+                "stage"
+              ]
+            }
+          },
+          "event": {
+            "listen": "test",
+            "script": {
+              "type": "text/javascript",
+              "exec": [
+                "pm.test(\"status 200\", () => pm.response.to.have.status(200));"
+              ]
+            }
+          }
+        },
+        {
+          "name": "Pipeline: PL-1 in WON only",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/pipeline",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "pipeline"
+              ]
+            }
+          },
+          "event": {
+            "listen": "test",
+            "script": {
+              "type": "text/javascript",
+              "exec": [
+                "pm.test(\"status 200\", () => pm.response.to.have.status(200));",
+                "pm.test(\"PL-1 Alpha sits only in WON\", () => { const p = pm.response.json().pipeline; const inStages = Object.keys(p).filter((s) => p[s].some((x) => x.name === \"PL-1 Alpha\")); pm.expect(inStages).to.eql([\"WON\"]);});",
+                "pm.test(\"PL-4 Delta sits only in WON\", () => { const p = pm.response.json().pipeline; const inStages = Object.keys(p).filter((s) => p[s].some((x) => x.name === \"PL-4 Delta\")); pm.expect(inStages).to.eql([\"WON\"]);});",
+                "pm.test(\"PL-3 Charlie sits only in PROPOSAL\", () => { const p = pm.response.json().pipeline; const inStages = Object.keys(p).filter((s) => p[s].some((x) => x.name === \"PL-3 Charlie\")); pm.expect(inStages).to.eql([\"PROPOSAL\"]);});"
+              ]
+            }
+          }
+        },
+        {
+          "name": "Move PL-1 WON -> LOST",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"stage\": \"LOST\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/pipeline/{{pl1}}/stage",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "pipeline",
+                "{{pl1}}",
+                "stage"
+              ]
+            }
+          },
+          "event": {
+            "listen": "test",
+            "script": {
+              "type": "text/javascript",
+              "exec": [
+                "pm.test(\"status 200\", () => pm.response.to.have.status(200));"
+              ]
+            }
+          }
+        },
+        {
+          "name": "Pipeline: PL-1 in LOST only",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/pipeline",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "pipeline"
+              ]
+            }
+          },
+          "event": {
+            "listen": "test",
+            "script": {
+              "type": "text/javascript",
+              "exec": [
+                "pm.test(\"status 200\", () => pm.response.to.have.status(200));",
+                "pm.test(\"PL-1 Alpha sits only in LOST\", () => { const p = pm.response.json().pipeline; const inStages = Object.keys(p).filter((s) => p[s].some((x) => x.name === \"PL-1 Alpha\")); pm.expect(inStages).to.eql([\"LOST\"]);});",
+                "pm.test(\"PL-4 Delta sits only in WON\", () => { const p = pm.response.json().pipeline; const inStages = Object.keys(p).filter((s) => p[s].some((x) => x.name === \"PL-4 Delta\")); pm.expect(inStages).to.eql([\"WON\"]);});",
+                "pm.test(\"PL-3 Charlie sits only in PROPOSAL\", () => { const p = pm.response.json().pipeline; const inStages = Object.keys(p).filter((s) => p[s].some((x) => x.name === \"PL-3 Charlie\")); pm.expect(inStages).to.eql([\"PROPOSAL\"]);});",
+                "pm.test('total at least 4', () => pm.expect(pm.response.json().total).to.be.at.least(4));"
+              ]
+            }
+          }
+        },
+        {
+          "name": "Move PL-1 LOST -> LEAD (full cycle back)",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"stage\": \"LEAD\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/pipeline/{{pl1}}/stage",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "pipeline",
+                "{{pl1}}",
+                "stage"
+              ]
+            }
+          },
+          "event": {
+            "listen": "test",
+            "script": {
+              "type": "text/javascript",
+              "exec": [
+                "pm.test(\"status 200\", () => pm.response.to.have.status(200));"
+              ]
+            }
+          }
+        },
+        {
+          "name": "Pipeline: back to LEAD",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/pipeline",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "pipeline"
+              ]
+            }
+          },
+          "event": {
+            "listen": "test",
+            "script": {
+              "type": "text/javascript",
+              "exec": [
+                "pm.test(\"status 200\", () => pm.response.to.have.status(200));",
+                "pm.test(\"PL-1 Alpha sits only in LEAD\", () => { const p = pm.response.json().pipeline; const inStages = Object.keys(p).filter((s) => p[s].some((x) => x.name === \"PL-1 Alpha\")); pm.expect(inStages).to.eql([\"LEAD\"]);});",
+                "pm.test(\"PL-2 Bravo sits only in LEAD\", () => { const p = pm.response.json().pipeline; const inStages = Object.keys(p).filter((s) => p[s].some((x) => x.name === \"PL-2 Bravo\")); pm.expect(inStages).to.eql([\"LEAD\"]);});",
+                "pm.test('LOST cleared again', () => pm.expect(pm.response.json().pipeline.LOST).to.eql([]));"
+              ]
+            }
+          }
+        },
+        {
+          "name": "Invalid stage (expect 400)",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"stage\": \"BOGUS\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/pipeline/{{pl1}}/stage",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "pipeline",
+                "{{pl1}}",
+                "stage"
+              ]
+            }
+          },
+          "event": {
+            "listen": "test",
+            "script": {
+              "type": "text/javascript",
+              "exec": [
+                "pm.test(\"status 400\", () => pm.response.to.have.status(400));"
+              ]
+            }
+          }
+        },
+        {
+          "name": "Missing stage (expect 400)",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/pipeline/{{pl1}}/stage",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "pipeline",
+                "{{pl1}}",
+                "stage"
+              ]
+            }
+          },
+          "event": {
+            "listen": "test",
+            "script": {
+              "type": "text/javascript",
+              "exec": [
+                "pm.test(\"status 400\", () => pm.response.to.have.status(400));"
+              ]
+            }
+          }
+        },
+        {
+          "name": "Non-uuid clientId (expect 400)",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"stage\": \"WON\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/pipeline/not-a-uuid/stage",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "pipeline",
+                "not-a-uuid",
+                "stage"
+              ]
+            }
+          },
+          "event": {
+            "listen": "test",
+            "script": {
+              "type": "text/javascript",
+              "exec": [
+                "pm.test(\"status 400\", () => pm.response.to.have.status(400));"
+              ]
+            }
+          }
+        },
+        {
+          "name": "Unknown uuid (expect 404)",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"stage\": \"WON\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/pipeline/11111111-2222-4333-8444-555555555555/stage",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "pipeline",
+                "11111111-2222-4333-8444-555555555555",
+                "stage"
+              ]
+            }
+          },
+          "event": {
+            "listen": "test",
+            "script": {
+              "type": "text/javascript",
+              "exec": [
+                "pm.test(\"status 404\", () => pm.response.to.have.status(404));"
+              ]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "05 Dashboard as Alice",
+      "item": [
+        {
+          "name": "Login as Alice",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"{{aliceEmail}}\",\n  \"password\": \"{{alicePassword}}\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/auth/login",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "auth",
+                "login"
+              ]
+            }
+          },
+          "event": {
+            "listen": "test",
+            "script": {
+              "type": "text/javascript",
+              "exec": [
+                "pm.test(\"status 200\", () => pm.response.to.have.status(200));",
+                "if (pm.response.code === 200) pm.environment.set(\"accessToken\", pm.response.json().accessToken);"
+              ]
+            }
+          }
+        },
+        {
+          "name": "Dashboard reflects seeded pipeline",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/dashboard",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "dashboard"
+              ]
+            }
+          },
+          "event": {
+            "listen": "test",
+            "script": {
+              "type": "text/javascript",
+              "exec": [
+                "pm.test(\"status 200\", () => pm.response.to.have.status(200));",
+                "pm.test('byStage has all five keys', () => pm.expect(Object.keys(pm.response.json().byStage).sort()).to.eql(['CONTACTED','LEAD','LOST','PROPOSAL','WON']));",
+                "pm.test('totalClients is a number', () => pm.expect(pm.response.json().totalClients).to.be.a('number'));",
+                "pm.test('wonRate is a number 0..100', () => { const w = pm.response.json().wonRate; pm.expect(w).to.be.a('number'); pm.expect(w).to.be.within(0, 100); });",
+                "pm.test('recentContacts is an array', () => pm.expect(pm.response.json().recentContacts).to.be.an('array'));",
+                "pm.test('newClientsThisMonth is a number', () => pm.expect(pm.response.json().newClientsThisMonth).to.be.a('number'));",
+                "pm.test('no password leaked', () => pm.expect(JSON.stringify(pm.response.json())).to.not.include('password'));",
+                "pm.test('byStage sums to totalClients', () => { const b = pm.response.json(); const sum = Object.values(b.byStage).reduce((a, n) => a + n, 0); pm.expect(sum).to.eql(b.totalClients); });",
+                "const b = pm.response.json();",
+                "pm.test('totalClients equals PL count (4)', () => pm.expect(b.totalClients).to.be.at.least(4));",
+                "pm.test('newClientsThisMonth equals total (all created now)', () => pm.expect(b.newClientsThisMonth).to.eql(b.totalClients));",
+                "pm.test('every recentContact carries clientName', () => b.recentContacts.forEach((c) => pm.expect(typeof c.clientName).to.eql('string')));",
+                "pm.test('recentContacts capped at 5', () => pm.expect(b.recentContacts.length).to.be.at.most(5));",
+                "pm.test('recentContacts newest first', () => { const d = b.recentContacts.map((x) => new Date(x.date).getTime()); for (let i = 1; i < d.length; i++) pm.expect(d[i]).to.be.at.most(d[i - 1]); });"
+              ]
+            }
+          }
+        },
+        {
+          "name": "Capture pipeline snapshot",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/pipeline",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "pipeline"
+              ]
+            }
+          },
+          "event": {
+            "listen": "test",
+            "script": {
+              "type": "text/javascript",
+              "exec": [
+                "pm.test(\"status 200\", () => pm.response.to.have.status(200));",
+                "const p = pm.response.json();",
+                "pm.environment.set(\"snapTotal\", p.total);",
+                "Object.keys(p.pipeline).forEach((s) => pm.environment.set(\"snap_\" + s, p.pipeline[s].length));",
+                "pm.test(\"snapshot captured\", () => pm.expect(p.total).to.be.a(\"number\"));"
+              ]
+            }
+          }
+        },
+        {
+          "name": "Dashboard agrees with pipeline snapshot",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/dashboard",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "dashboard"
+              ]
+            }
+          },
+          "event": {
+            "listen": "test",
+            "script": {
+              "type": "text/javascript",
+              "exec": [
+                "pm.test(\"status 200\", () => pm.response.to.have.status(200));",
+                "const d = pm.response.json();",
+                "pm.test(\"dashboard total matches pipeline total\", () => pm.expect(d.totalClients).to.eql(pm.environment.get(\"snapTotal\")));",
+                "pm.test(\"dashboard byStage matches pipeline counts\", () => {",
+                "  [\"LEAD\",\"CONTACTED\",\"PROPOSAL\",\"WON\",\"LOST\"].forEach((s) =>",
+                "    pm.expect(d.byStage[s]).to.eql(pm.environment.get(\"snap_\" + s)));",
+                "});"
+              ]
+            }
+          }
+        },
+        {
+          "name": "Create a WON client then wonRate rises",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"DB-Won\",\n  \"company\": \"DB\",\n  \"stage\": \"WON\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/clients",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "clients"
+              ]
+            }
+          },
+          "event": {
+            "listen": "test",
+            "script": {
+              "type": "text/javascript",
+              "exec": [
+                "pm.test(\"status 201\", () => pm.response.to.have.status(201));",
+                "if (pm.response.code === 201) pm.environment.set(\"dbWon\", pm.response.json().client.id);"
+              ]
+            }
+          }
+        },
+        {
+          "name": "Dashboard after adding a WON client",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/dashboard",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "dashboard"
+              ]
+            }
+          },
+          "event": {
+            "listen": "test",
+            "script": {
+              "type": "text/javascript",
+              "exec": [
+                "pm.test(\"status 200\", () => pm.response.to.have.status(200));",
+                "const d = pm.response.json();",
+                "pm.test('byStage.WON increased', () => pm.expect(d.byStage.WON).to.be.at.least(1));",
+                "pm.test('wonRate recomputed in memory', () => { const expected = Math.round((d.byStage.WON / d.totalClients) * 10000) / 100; pm.expect(d.wonRate).to.eql(expected); });"
+              ]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "06 Tenant isolation as Bob",
+      "item": [
+        {
+          "name": "Login as Bob",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"{{bobEmail}}\",\n  \"password\": \"{{bobPassword}}\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/auth/login",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "auth",
+                "login"
+              ]
+            }
+          },
+          "event": {
+            "listen": "test",
+            "script": {
+              "type": "text/javascript",
+              "exec": [
+                "pm.test(\"status 200\", () => pm.response.to.have.status(200));",
+                "if (pm.response.code === 200) pm.environment.set(\"bobToken\", pm.response.json().accessToken);"
+              ]
+            }
+          }
+        },
+        {
+          "name": "Bob sees zero clients",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{bobToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/clients",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "clients"
+              ]
+            }
+          },
+          "event": {
+            "listen": "test",
+            "script": {
+              "type": "text/javascript",
+              "exec": [
+                "pm.test(\"status 200\", () => pm.response.to.have.status(200));",
+                "pm.test(\"bob has no clients\", () => pm.expect(pm.response.json().count).to.eql(0));"
+              ]
+            }
+          }
+        },
+        {
+          "name": "Bob GET Alice client (expect 404)",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{bobToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/clients/{{clientId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "clients",
+                "{{clientId}}"
+              ]
+            }
+          },
+          "event": {
+            "listen": "test",
+            "script": {
+              "type": "text/javascript",
+              "exec": [
+                "pm.test(\"status 404\", () => pm.response.to.have.status(404));"
+              ]
+            }
+          }
+        },
+        {
+          "name": "Bob PATCH Alice client (expect 404)",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{bobToken}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Hijacked\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/clients/{{clientId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "clients",
+                "{{clientId}}"
+              ]
+            }
+          },
+          "event": {
+            "listen": "test",
+            "script": {
+              "type": "text/javascript",
+              "exec": [
+                "pm.test(\"status 404\", () => pm.response.to.have.status(404));"
+              ]
+            }
+          }
+        },
+        {
+          "name": "Bob DELETE Alice client (expect 404)",
+          "request": {
+            "method": "DELETE",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{bobToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/clients/{{clientId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "clients",
+                "{{clientId}}"
+              ]
+            }
+          },
+          "event": {
+            "listen": "test",
+            "script": {
+              "type": "text/javascript",
+              "exec": [
+                "pm.test(\"status 404\", () => pm.response.to.have.status(404));"
+              ]
+            }
+          }
+        },
+        {
+          "name": "Login as Alice",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"{{aliceEmail}}\",\n  \"password\": \"{{alicePassword}}\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/auth/login",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "auth",
+                "login"
+              ]
+            }
+          },
+          "event": {
+            "listen": "test",
+            "script": {
+              "type": "text/javascript",
+              "exec": [
+                "pm.test(\"status 200\", () => pm.response.to.have.status(200));",
+                "if (pm.response.code === 200) pm.environment.set(\"accessToken\", pm.response.json().accessToken);"
+              ]
+            }
+          }
+        },
+        {
+          "name": "Alice's client untouched",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/clients/{{clientId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "clients",
+                "{{clientId}}"
+              ]
+            }
+          },
+          "event": {
+            "listen": "test",
+            "script": {
+              "type": "text/javascript",
+              "exec": [
+                "pm.test(\"status 200\", () => pm.response.to.have.status(200));",
+                "pm.test(\"name not hijacked\", () => pm.expect(pm.response.json().client.name).to.not.eql(\"Hijacked\"));"
+              ]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "07 Contacts tenant isolation as Bob",
+      "item": [
+        {
+          "name": "Login as Bob",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"{{bobEmail}}\",\n  \"password\": \"{{bobPassword}}\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/auth/login",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "auth",
+                "login"
+              ]
+            }
+          },
+          "event": {
+            "listen": "test",
+            "script": {
+              "type": "text/javascript",
+              "exec": [
+                "pm.test(\"status 200\", () => pm.response.to.have.status(200));",
+                "if (pm.response.code === 200) pm.environment.set(\"bobToken\", pm.response.json().accessToken);"
+              ]
+            }
+          }
+        },
+        {
+          "name": "Bob POSTs contact to Alice client (expect 404)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{bobToken}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/clients/{{clientId}}/contacts",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "clients",
+                "{{clientId}}",
+                "contacts"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"type\": \"CALL\",\n  \"date\": \"2026-10-03T09:00:00Z\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": {
+            "listen": "test",
+            "script": {
+              "type": "text/javascript",
+              "exec": [
+                "pm.test(\"status 404\", () => pm.response.to.have.status(404));"
+              ]
+            }
+          }
+        },
+        {
+          "name": "Bob GETs Alice contacts (expect 404)",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{bobToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/clients/{{clientId}}/contacts",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "clients",
+                "{{clientId}}",
+                "contacts"
+              ]
+            }
+          },
+          "event": {
+            "listen": "test",
+            "script": {
+              "type": "text/javascript",
+              "exec": [
+                "pm.test(\"status 404\", () => pm.response.to.have.status(404));"
+              ]
+            }
+          }
+        },
+        {
+          "name": "Bob DELETEs Alice contact (expect 404)",
+          "request": {
+            "method": "DELETE",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{bobToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/clients/{{clientId}}/contacts/{{contactId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "clients",
+                "{{clientId}}",
+                "contacts",
+                "{{contactId}}"
+              ]
+            }
+          },
+          "event": {
+            "listen": "test",
+            "script": {
+              "type": "text/javascript",
+              "exec": [
+                "pm.test(\"status 404\", () => pm.response.to.have.status(404));"
+              ]
+            }
+          }
+        },
+        {
+          "name": "Login as Alice",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"{{aliceEmail}}\",\n  \"password\": \"{{alicePassword}}\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/auth/login",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "auth",
+                "login"
+              ]
+            }
+          },
+          "event": {
+            "listen": "test",
+            "script": {
+              "type": "text/javascript",
+              "exec": [
+                "pm.test(\"status 200\", () => pm.response.to.have.status(200));",
+                "if (pm.response.code === 200) pm.environment.set(\"accessToken\", pm.response.json().accessToken);"
+              ]
+            }
+          }
+        },
+        {
+          "name": "Alice contacts untouched (expect 3)",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/clients/{{clientId}}/contacts",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "clients",
+                "{{clientId}}",
+                "contacts"
+              ]
+            }
+          },
+          "event": {
+            "listen": "test",
+            "script": {
+              "type": "text/javascript",
+              "exec": [
+                "pm.test(\"status 200\", () => pm.response.to.have.status(200));",
+                "pm.test(\"still 3 contacts\", () => pm.expect(pm.response.json().count).to.eql(3));"
+              ]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "08 Pipeline tenant isolation as Bob",
+      "item": [
+        {
+          "name": "Login as Bob",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"{{bobEmail}}\",\n  \"password\": \"{{bobPassword}}\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/auth/login",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "auth",
+                "login"
+              ]
+            }
+          },
+          "event": {
+            "listen": "test",
+            "script": {
+              "type": "text/javascript",
+              "exec": [
+                "pm.test(\"status 200\", () => pm.response.to.have.status(200));",
+                "if (pm.response.code === 200) pm.environment.set(\"bobToken\", pm.response.json().accessToken);"
+              ]
+            }
+          }
+        },
+        {
+          "name": "Bob pipeline is empty",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{bobToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/pipeline",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "pipeline"
+              ]
+            }
+          },
+          "event": {
+            "listen": "test",
+            "script": {
+              "type": "text/javascript",
+              "exec": [
+                "pm.test(\"status 200\", () => pm.response.to.have.status(200));",
+                "pm.test('has all five stage keys', () => pm.expect(Object.keys(pm.response.json().pipeline).sort()).to.eql(['CONTACTED','LEAD','LOST','PROPOSAL','WON']));",
+                "pm.test('every bucket is an array', () => Object.values(pm.response.json().pipeline).forEach((b) => pm.expect(b).to.be.an('array')));",
+                "pm.test('no password leaked', () => pm.expect(JSON.stringify(pm.response.json())).to.not.include('password'));",
+                "pm.test('every client appears in exactly one bucket', () => { const p = pm.response.json().pipeline; const all = Object.values(p).flat().map((x) => x.id); pm.expect(all.length).to.eql(new Set(all).size); });",
+                "pm.test('bob total is 0', () => pm.expect(pm.response.json().total).to.eql(0));"
+              ]
+            }
+          }
+        },
+        {
+          "name": "Bob cannot change Alice client stage (expect 404)",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{bobToken}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"stage\": \"WON\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/pipeline/{{pl1}}/stage",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "pipeline",
+                "{{pl1}}",
+                "stage"
+              ]
+            }
+          },
+          "event": {
+            "listen": "test",
+            "script": {
+              "type": "text/javascript",
+              "exec": [
+                "pm.test(\"status 404\", () => pm.response.to.have.status(404));"
+              ]
+            }
+          }
+        },
+        {
+          "name": "Bob cannot move pl2 either (expect 404)",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{bobToken}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"stage\": \"LOST\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/pipeline/{{pl2}}/stage",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "pipeline",
+                "{{pl2}}",
+                "stage"
+              ]
+            }
+          },
+          "event": {
+            "listen": "test",
+            "script": {
+              "type": "text/javascript",
+              "exec": [
+                "pm.test(\"status 404\", () => pm.response.to.have.status(404));"
+              ]
+            }
+          }
+        },
+        {
+          "name": "Login as Alice",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"{{aliceEmail}}\",\n  \"password\": \"{{alicePassword}}\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/auth/login",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "auth",
+                "login"
+              ]
+            }
+          },
+          "event": {
+            "listen": "test",
+            "script": {
+              "type": "text/javascript",
+              "exec": [
+                "pm.test(\"status 200\", () => pm.response.to.have.status(200));",
+                "if (pm.response.code === 200) pm.environment.set(\"accessToken\", pm.response.json().accessToken);"
+              ]
+            }
+          }
+        },
+        {
+          "name": "Alice pipeline untouched",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/pipeline",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "pipeline"
+              ]
+            }
+          },
+          "event": {
+            "listen": "test",
+            "script": {
+              "type": "text/javascript",
+              "exec": [
+                "pm.test(\"status 200\", () => pm.response.to.have.status(200));",
+                "pm.test('has all five stage keys', () => pm.expect(Object.keys(pm.response.json().pipeline).sort()).to.eql(['CONTACTED','LEAD','LOST','PROPOSAL','WON']));",
+                "pm.test('every bucket is an array', () => Object.values(pm.response.json().pipeline).forEach((b) => pm.expect(b).to.be.an('array')));",
+                "pm.test('no password leaked', () => pm.expect(JSON.stringify(pm.response.json())).to.not.include('password'));",
+                "pm.test('every client appears in exactly one bucket', () => { const p = pm.response.json().pipeline; const all = Object.values(p).flat().map((x) => x.id); pm.expect(all.length).to.eql(new Set(all).size); });",
+                "pm.test(\"PL-1 Alpha sits only in LEAD\", () => { const p = pm.response.json().pipeline; const inStages = Object.keys(p).filter((s) => p[s].some((x) => x.name === \"PL-1 Alpha\")); pm.expect(inStages).to.eql([\"LEAD\"]);});",
+                "pm.test(\"PL-2 Bravo sits only in LEAD\", () => { const p = pm.response.json().pipeline; const inStages = Object.keys(p).filter((s) => p[s].some((x) => x.name === \"PL-2 Bravo\")); pm.expect(inStages).to.eql([\"LEAD\"]);});",
+                "pm.test(\"PL-3 Charlie sits only in PROPOSAL\", () => { const p = pm.response.json().pipeline; const inStages = Object.keys(p).filter((s) => p[s].some((x) => x.name === \"PL-3 Charlie\")); pm.expect(inStages).to.eql([\"PROPOSAL\"]);});",
+                "pm.test(\"PL-4 Delta sits only in WON\", () => { const p = pm.response.json().pipeline; const inStages = Object.keys(p).filter((s) => p[s].some((x) => x.name === \"PL-4 Delta\")); pm.expect(inStages).to.eql([\"WON\"]);});"
+              ]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "09 Dashboard isolation and empty state",
+      "item": [
+        {
+          "name": "Bob dashboard is zeroed",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{bobToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/dashboard",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "dashboard"
+              ]
+            }
+          },
+          "event": {
+            "listen": "test",
+            "script": {
+              "type": "text/javascript",
+              "exec": [
+                "pm.test(\"status 200\", () => pm.response.to.have.status(200));",
+                "pm.test('byStage has all five keys', () => pm.expect(Object.keys(pm.response.json().byStage).sort()).to.eql(['CONTACTED','LEAD','LOST','PROPOSAL','WON']));",
+                "pm.test('totalClients is a number', () => pm.expect(pm.response.json().totalClients).to.be.a('number'));",
+                "pm.test('wonRate is a number 0..100', () => { const w = pm.response.json().wonRate; pm.expect(w).to.be.a('number'); pm.expect(w).to.be.within(0, 100); });",
+                "pm.test('recentContacts is an array', () => pm.expect(pm.response.json().recentContacts).to.be.an('array'));",
+                "pm.test('newClientsThisMonth is a number', () => pm.expect(pm.response.json().newClientsThisMonth).to.be.a('number'));",
+                "pm.test('no password leaked', () => pm.expect(JSON.stringify(pm.response.json())).to.not.include('password'));",
+                "pm.test('byStage sums to totalClients', () => { const b = pm.response.json(); const sum = Object.values(b.byStage).reduce((a, n) => a + n, 0); pm.expect(sum).to.eql(b.totalClients); });",
+                "const d = pm.response.json();",
+                "pm.test('bob totalClients is 0', () => pm.expect(d.totalClients).to.eql(0));",
+                "pm.test('bob wonRate is 0 not NaN', () => pm.expect(d.wonRate).to.eql(0));",
+                "pm.test('bob all byStage zero', () => Object.values(d.byStage).forEach((n) => pm.expect(n).to.eql(0)));",
+                "pm.test('bob recentContacts empty', () => pm.expect(d.recentContacts).to.eql([]));",
+                "pm.test('bob newClientsThisMonth 0', () => pm.expect(d.newClientsThisMonth).to.eql(0));"
+              ]
+            }
+          }
+        },
+        {
+          "name": "Login as Bob",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"{{bobEmail}}\",\n  \"password\": \"{{bobPassword}}\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/auth/login",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "auth",
+                "login"
+              ]
+            }
+          },
+          "event": {
+            "listen": "test",
+            "script": {
+              "type": "text/javascript",
+              "exec": [
+                "pm.test(\"status 200\", () => pm.response.to.have.status(200));",
+                "if (pm.response.code === 200) pm.environment.set(\"bobToken\", pm.response.json().accessToken);"
+              ]
+            }
+          }
+        },
+        {
+          "name": "Bob dashboard still zero after login",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{bobToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/dashboard",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "dashboard"
+              ]
+            }
+          },
+          "event": {
+            "listen": "test",
+            "script": {
+              "type": "text/javascript",
+              "exec": [
+                "pm.test(\"status 200\", () => pm.response.to.have.status(200));",
+                "pm.test('no errors, zeros only', () => { const d = pm.response.json(); pm.expect(d.totalClients).to.eql(0); pm.expect(d.wonRate).to.eql(0); pm.expect(d.recentContacts).to.eql([]); });"
+              ]
+            }
+          }
+        },
+        {
+          "name": "Dashboard without token (expect 401)",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/dashboard",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "dashboard"
+              ]
+            }
+          },
+          "event": {
+            "listen": "test",
+            "script": {
+              "type": "text/javascript",
+              "exec": [
+                "pm.test(\"status 401\", () => pm.response.to.have.status(401));"
+              ]
+            }
+          }
+        },
+        {
+          "name": "Dashboard with garbage token (expect 401)",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{none}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/dashboard",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "dashboard"
+              ]
+            }
+          },
+          "event": {
+            "listen": "test",
+            "script": {
+              "type": "text/javascript",
+              "exec": [
+                "pm.test(\"status 401\", () => pm.response.to.have.status(401));"
+              ]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "10 Unauthenticated",
+      "item": [
+        {
+          "name": "No Authorization header (expect 401)",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/clients",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "clients"
+              ]
+            }
+          },
+          "event": {
+            "listen": "test",
+            "script": {
+              "type": "text/javascript",
+              "exec": [
+                "pm.test(\"status 401\", () => pm.response.to.have.status(401));"
+              ]
+            }
+          }
+        },
+        {
+          "name": "Garbage token (expect 401)",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer not.a.jwt"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/clients",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "clients"
+              ]
+            }
+          },
+          "event": {
+            "listen": "test",
+            "script": {
+              "type": "text/javascript",
+              "exec": [
+                "pm.test(\"status 401\", () => pm.response.to.have.status(401));"
+              ]
+            }
+          }
+        },
+        {
+          "name": "Empty bearer (expect 401)",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer "
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/clients",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "clients"
+              ]
+            }
+          },
+          "event": {
+            "listen": "test",
+            "script": {
+              "type": "text/javascript",
+              "exec": [
+                "pm.test(\"status 401\", () => pm.response.to.have.status(401));"
+              ]
+            }
+          }
+        },
+        {
+          "name": "Refreshed token still works",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{refreshedAccessToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/clients",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "clients"
+              ]
+            }
+          },
+          "event": {
+            "listen": "test",
+            "script": {
+              "type": "text/javascript",
+              "exec": [
+                "pm.test(\"status 200\", () => pm.response.to.have.status(200));"
+              ]
+            }
+          }
+        },
+        {
+          "name": "Unknown route (expect 404)",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/nope",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "nope"
+              ]
+            }
+          },
+          "event": {
+            "listen": "test",
+            "script": {
+              "type": "text/javascript",
+              "exec": [
+                "pm.test(\"status 404\", () => pm.response.to.have.status(404));"
+              ]
+            }
+          }
+        },
+        {
+          "name": "No token on contacts (expect 401)",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/clients/{{clientId}}/contacts",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "clients",
+                "{{clientId}}",
+                "contacts"
+              ]
+            }
+          },
+          "event": {
+            "listen": "test",
+            "script": {
+              "type": "text/javascript",
+              "exec": [
+                "pm.test(\"status 401\", () => pm.response.to.have.status(401));"
+              ]
+            }
+          }
+        },
+        {
+          "name": "Pipeline without token (expect 401)",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{nobody}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/pipeline",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "pipeline"
+              ]
+            }
+          },
+          "event": {
+            "listen": "test",
+            "script": {
+              "type": "text/javascript",
+              "exec": [
+                "pm.test(\"status 401\", () => pm.response.to.have.status(401));"
+              ]
+            }
+          }
+        },
+        {
+          "name": "Logout without token (expect 401)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/auth/logout",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "auth",
+                "logout"
+              ]
+            }
+          },
+          "event": {
+            "listen": "test",
+            "script": {
+              "type": "text/javascript",
+              "exec": [
+                "pm.test('status 401', () => pm.response.to.have.status(401));"
+              ]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "11 Cleanup",
+      "item": [
+        {
+          "name": "Delete remaining pipeline clients",
+          "request": {
+            "method": "DELETE",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/clients/{{dbWon}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "clients",
+                "{{dbWon}}"
+              ]
+            }
+          },
+          "event": {
+            "listen": "test",
+            "script": {
+              "type": "text/javascript",
+              "exec": [
+                "pm.test(\"status 204\", () => pm.response.to.have.status(204));"
+              ]
+            }
+          }
+        },
+        {
+          "name": "Login as Alice",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"{{aliceEmail}}\",\n  \"password\": \"{{alicePassword}}\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/auth/login",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "auth",
+                "login"
+              ]
+            }
+          },
+          "event": {
+            "listen": "test",
+            "script": {
+              "type": "text/javascript",
+              "exec": [
+                "pm.test(\"status 200\", () => pm.response.to.have.status(200));",
+                "if (pm.response.code === 200) pm.environment.set(\"accessToken\", pm.response.json().accessToken);"
+              ]
+            }
+          }
+        },
+        {
+          "name": "Delete client (expect 204)",
+          "request": {
+            "method": "DELETE",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/clients/{{clientId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "clients",
+                "{{clientId}}"
+              ]
+            }
+          },
+          "event": {
+            "listen": "test",
+            "script": {
+              "type": "text/javascript",
+              "exec": [
+                "pm.test(\"status 204\", () => pm.response.to.have.status(204));"
+              ]
+            }
+          }
+        },
+        {
+          "name": "Deleted client gone (expect 404)",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/clients/{{clientId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "clients",
+                "{{clientId}}"
+              ]
+            }
+          },
+          "event": {
+            "listen": "test",
+            "script": {
+              "type": "text/javascript",
+              "exec": [
+                "pm.test(\"status 404\", () => pm.response.to.have.status(404));"
+              ]
+            }
+          }
+        },
+        {
+          "name": "Delete PL-1",
+          "request": {
+            "method": "DELETE",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/clients/{{pl1}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "clients",
+                "{{pl1}}"
+              ]
+            }
+          },
+          "event": {
+            "listen": "test",
+            "script": {
+              "type": "text/javascript",
+              "exec": [
+                "pm.test(\"status 204\", () => pm.response.to.have.status(204));"
+              ]
+            }
+          }
+        },
+        {
+          "name": "Delete PL-2",
+          "request": {
+            "method": "DELETE",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/clients/{{pl2}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "clients",
+                "{{pl2}}"
+              ]
+            }
+          },
+          "event": {
+            "listen": "test",
+            "script": {
+              "type": "text/javascript",
+              "exec": [
+                "pm.test(\"status 204\", () => pm.response.to.have.status(204));"
+              ]
+            }
+          }
+        },
+        {
+          "name": "Logout clears refresh cookie",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/auth/logout",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "auth",
+                "logout"
+              ]
+            }
+          },
+          "event": {
+            "listen": "test",
+            "script": {
+              "type": "text/javascript",
+              "exec": [
+                "pm.test('status 204', () => pm.response.to.have.status(204));",
+                "const setCookie = pm.response.headers.get('Set-Cookie') || '';",
+                "pm.test('refresh cookie is cleared', () => pm.expect(setCookie).to.include('refreshToken=;'));",
+                "pm.test('expiry is in the past', () => pm.expect(setCookie).to.include('Expires=Thu, 01 Jan 1970'));"
+              ]
+            }
+          }
+        }
+      ]
+    }
+  ]
+}
