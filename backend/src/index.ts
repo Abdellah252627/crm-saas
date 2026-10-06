@@ -2,8 +2,8 @@
 import cookieParser from "cookie-parser";
 import cors from "cors";
 import express from "express";
-import helmet from "helmet";
-import type { NextFunction, Request, Response } from "express";
+import * as helmetModule from "helmet";
+import type { NextFunction, Request, RequestHandler, Response } from "express";
 import { env } from "./config/env.js";
 import { errorHandler, notFoundHandler } from "./middlewares/error.middleware.js";
 import { apiRateLimiter } from "./middlewares/rate-limit.middleware.js";
@@ -13,6 +13,11 @@ import clientRoutes from "./routes/client.routes.js";
 import dashboardRoutes from "./routes/dashboard.routes.js";
 import pipelineRoutes from "./routes/pipeline.routes.js";
 import { pruneExpiredSessions } from "./services/auth.service.js";
+
+type HelmetMiddleware = (options?: Record<string, unknown>) => RequestHandler;
+
+const helmet = (helmetModule as unknown as { default?: HelmetMiddleware }).default ??
+  (helmetModule as unknown as HelmetMiddleware);
 
 const app = express();
 
